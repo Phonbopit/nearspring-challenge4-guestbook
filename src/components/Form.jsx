@@ -2,7 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import Big from "big.js";
 
-export default function Form({ onSubmit, currentUser }) {
+export default function Form({ onSubmit, currentUser, isLoading }) {
   return (
     <form onSubmit={onSubmit}>
       <fieldset id="fieldset">
@@ -42,7 +42,11 @@ export default function Form({ onSubmit, currentUser }) {
           />
           <span title="NEAR Tokens">Ⓝ</span>
         </p>
-        <button type="submit" className="btn-sign">
+        <button
+          type="submit"
+          className={`btn-sign ${isLoading ? "is-loading" : ""}`}
+          disabled={isLoading}
+        >
           Sign
         </button>
       </fieldset>
