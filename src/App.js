@@ -1,21 +1,22 @@
-import "regenerator-runtime/runtime";
-import React, { useState, useEffect, useCallback } from "react";
-import PropTypes from "prop-types";
-import { providers, utils } from "near-api-js";
-import Big from "big.js";
+import 'regenerator-runtime/runtime';
+import React, { useState, useEffect, useCallback } from 'react';
+import { providers, utils } from 'near-api-js';
+import Big from 'big.js';
 
-import Form from "./components/Form";
-import SignIn from "./components/SignIn";
-import Messages from "./components/Messages";
-import { useWalletSelector } from "./contexts/WalletSelectorContext";
+import Form from './components/Form';
+import SignIn from './components/SignIn';
+import Messages from './components/Messages';
+import Loading from './components/Loading';
 
-const SUGGESTED_DONATION = "0";
+import { useWalletSelector } from './contexts/WalletSelectorContext';
+
+const SUGGESTED_DONATION = '0';
 const BOATLOAD_OF_GAS = Big(3)
   .times(10 ** 13)
   .toFixed();
 
 const App = () => {
-  const { selector, accounts, accountId, setAccountId } = useWalletSelector();
+  const { selector, accountId } = useWalletSelector();
 
   const [account, setAccount] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -31,28 +32,28 @@ const App = () => {
 
     return provider
       .query({
-        request_type: "view_account",
-        finality: "final",
-        account_id: accountId,
+        request_type: 'view_account',
+        finality: 'final',
+        account_id: accountId
       })
       .then((data) => ({
         ...data,
-        account_id: accountId,
+        account_id: accountId
       }));
   }, [accountId, selector.network]);
 
   const getMessages = useCallback(() => {
     const provider = new providers.JsonRpcProvider({
-      url: selector.network.nodeUrl,
+      url: selector.network.nodeUrl
     });
 
     return provider
       .query({
-        request_type: "call_function",
+        request_type: 'call_function',
         account_id: selector.getContractId(),
-        method_name: "getMessages",
-        args_base64: "",
-        finality: "optimistic",
+        method_name: 'getMessages',
+        args_base64: '',
+        finality: 'optimistic'
       })
       .then((res) => JSON.parse(Buffer.from(res.result).toString()));
   }, [selector]);
@@ -80,28 +81,18 @@ const App = () => {
 
   const handleSignOut = () => {
     selector.signOut().catch((err) => {
-      console.log("Failed to sign out");
+      console.log('Failed to sign out');
       console.error(err);
     });
-  };
-
-  const handleSwitchProvider = () => {
-    selector.show();
-  };
-
-  const handleSwitchAccount = () => {
-    const currentIndex = accounts.findIndex((x) => x.accountId === accountId);
-    const nextIndex = currentIndex < accounts.length - 1 ? currentIndex + 1 : 0;
-
-    const nextAccountId = accounts[nextIndex].accountId;
-
-    setAccountId(nextAccountId);
-    alert("Switched account to " + nextAccountId);
   };
 
   const onSubmit = useCallback(
     (e) => {
       e.preventDefault();
+
+      if (isLoading) {
+        return;
+      }
 
       const { fieldset, message, donation } = e.target.elements;
 
@@ -114,34 +105,35 @@ const App = () => {
           signerId: accountId,
           actions: [
             {
-              type: "FunctionCall",
+              type: 'FunctionCall',
               params: {
-                methodName: "addMessage",
+                methodName: 'addMessage',
                 args: { text: message.value },
                 gas: BOATLOAD_OF_GAS,
-                deposit: utils.format.parseNearAmount(donation.value || "0"),
-              },
-            },
-          ],
+                deposit: utils.format.parseNearAmount(donation.value || '0')
+              }
+            }
+          ]
         })
         .catch((err) => {
-          alert("Failed to add message");
-          console.log("Failed to add message");
+          alert('Failed to add message');
+          console.log('Failed to add message');
 
           throw err;
         })
         .then(() => {
           return getMessages()
             .then((nextMessages) => {
+              setIsLoading(false);
               setMessages(nextMessages);
-              message.value = "";
+              message.value = '';
               donation.value = SUGGESTED_DONATION;
               fieldset.disabled = false;
               message.focus();
             })
             .catch((err) => {
-              alert("Failed to refresh messages");
-              console.log("Failed to refresh messages");
+              alert('Failed to refresh messages');
+              console.log('Failed to refresh messages');
 
               throw err;
             });
@@ -154,6 +146,10 @@ const App = () => {
     },
     [selector, accountId, getMessages]
   );
+
+  if (isLoading) {
+    return <Loading />;
+  }
 
   return (
     <main className="container is-max-desktop mt-4">
@@ -168,11 +164,44 @@ const App = () => {
         )}
       </header>
       {account ? (
-        <Form onSubmit={onSubmit} currentUser={account} />
+        <Form onSubmit={onSubmit} currentUser={account} isLoading={isLoading} />
       ) : (
         <SignIn />
       )}
       {!!account && !!messages.length && <Messages messages={messages} />}
+
+      <footer className="footer">
+        <p>
+          Made with ❤️ <span className="mx-1">By</span>
+          <a
+            href="https://twitter.com/phonbopit"
+            target="_blank"
+            rel="noreferrer noopener"
+            className="has-text-info"
+          >
+            @phonbopit
+          </a>
+        </p>
+        <p>
+          <a
+            href="https://nearspring.splashthat.com/"
+            target="_blank"
+            rel="noreferrer noopener"
+            className="has-text-black"
+          >
+            NEARSpring Challenge #4. Guestbook + Wallet Selector
+          </a>
+          {` | `}
+          <a
+            className="has-text-link"
+            href="https://github.com/Phonbopit/nearspring-challenge4-guestbook"
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            Source Code
+          </a>
+        </p>
+      </footer>
     </main>
   );
 };

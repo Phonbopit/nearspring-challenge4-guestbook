@@ -24,3 +24,4 @@ near-api-js version installed in dApp (guest book) must match with the near-api-
 - [wallet-selector](https://github.com/near/wallet-selector)
 - [minidenticons](https://github.com/laurentpayot/minidenticons)
 - [dayjs](https://day.js.org/)
+- [Loading.io](https://loading.io/css/)
